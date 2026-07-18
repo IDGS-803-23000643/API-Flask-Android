@@ -19,8 +19,30 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
     private val _booksState = mutableStateOf<UiState<List<Book>>>(UiState.Loading)
     val booksState: State<UiState<List<Book>>> = _booksState
 
+    private val _searchQuery = mutableStateOf("")
+    val searchQuery: State<String> = _searchQuery
+
+    private var allBooks: List<Book> = emptyList()
+
     init {
         fetchBooks()
+    }
+
+    fun onSearchQueryChange(newQuery: String) {
+        _searchQuery.value = newQuery
+        filterBooks(newQuery)
+    }
+
+    private fun filterBooks(query: String) {
+        if (query.isBlank()) {
+            _booksState.value = UiState.Success(allBooks)
+        } else {
+            val filtered = allBooks.filter {
+                it.title.contains(query, ignoreCase = true) || 
+                it.author.contains(query, ignoreCase = true)
+            }
+            _booksState.value = UiState.Success(filtered)
+        }
     }
 
     fun fetchBooks() {
@@ -28,7 +50,8 @@ class BookViewModel(private val repository: BookRepository) : ViewModel() {
             _booksState.value = UiState.Loading
             try {
                 val books = repository.getBooks()
-                _booksState.value = UiState.Success(books)
+                allBooks = books
+                filterBooks(_searchQuery.value)
             } catch (e: Exception) {
                 _booksState.value = UiState.Error("Error al conectar con el servidor")
             }

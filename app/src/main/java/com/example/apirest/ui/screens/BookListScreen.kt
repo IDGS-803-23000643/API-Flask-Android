@@ -4,19 +4,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.apirest.data.model.Book
 import com.example.apirest.ui.viewmodel.BookViewModel
 import com.example.apirest.ui.viewmodel.UiState
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,10 +22,37 @@ fun BookListScreen(
     onEditBook: (Book) -> Unit
 ) {
     val booksState by viewModel.booksState
+    val searchQuery by viewModel.searchQuery
     var showDeleteDialog by remember { mutableStateOf<Book?>(null) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Biblioteca de Libros") }) },
+        topBar = {
+            Column {
+                TopAppBar(title = { Text("Biblioteca de Libros") })
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.onSearchQueryChange(it) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    placeholder = { Text("Buscar por título o autor...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Limpiar")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent
+                    )
+                )
+            }
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddBook) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar Libro")
@@ -44,7 +67,10 @@ fun BookListScreen(
                 is UiState.Success -> {
                     val books = state.data
                     if (books.isEmpty()) {
-                        Text("No se encontraron libros", modifier = Modifier.align(Alignment.Center))
+                        Text(
+                            text = if (searchQuery.isEmpty()) "No se encontraron libros" else "Sin resultados para '$searchQuery'",
+                            modifier = Modifier.align(Alignment.Center)
+                        )
                     } else {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             items(books) { book ->
